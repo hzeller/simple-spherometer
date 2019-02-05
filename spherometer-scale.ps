@@ -1,0 +1,56 @@
+%!PS
+%%BoundingBox: 0 0 300 300
+/mm { 72 25.4 div mul } bind def
+/inch { 72 mul } bind def
+
+/font-size 5 def
+/inner-radius 20 mm def
+/outer-radius 55 mm def
+/pitch 0.5 mm def
+/turns 5 def
+
+/strip-width outer-radius inner-radius sub turns div def
+/PI 3.1415926 def
+
+/Helvetica findfont font-size scalefont setfont
+outer-radius dup translate
+
+% rotate-pos (text) (suffix)
+/write-at {
+    1 dict begin
+    /suffix exch def
+    /txt exch def
+    /rotate-pos exch def
+    /radius outer-radius rotate-pos pitch div strip-width mul sub def
+    gsave
+    rotate-pos pitch div 360 mul rotate
+    radius neg 0 moveto txt show
+    suffix show
+    grestore
+    rotate-pos
+      font-size            % Amount we want to clear
+      radius PI mul 2 mul  % Full diameter at current pos
+      div                  % Fraction of a turn until we're clear
+      pitch mul
+      add
+    end
+} def
+
+% millimeter -> (txt) (suffix)
+/gen-measure-text {
+    1000 mul cvi 1000 div (       ) cvs
+    (m)
+} def
+
+/next -1 def
+0 0.0001 2.5 {
+    /sag-in-mm exch def
+    sag-in-mm mm next ge {
+	sag-in-mm mm
+	sag-in-mm gen-measure-text
+	write-at
+	/next exch def
+    } if
+} for
+
+showpage
