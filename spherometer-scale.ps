@@ -1,47 +1,68 @@
 %!PS
-%%BoundingBox: 0 0 300 300
+%%BoundingBox: 0 0 340 340
 /mm { 72 25.4 div mul } bind def
 /inch { 72 mul } bind def
 
-/font-size 5 def
-/text-line-clearance 0.3 mm def   % Text above measure line
-/text-spacing 0.5 mm def          % Leave at least this amount to next tick
-
-/inner-radius 20 mm def
-/outer-radius 55 mm def
-
+/spherometer-radius 50 mm def     % Radius of circle circumscribing the legs
 /pitch 0.5 mm def                 % Pitch of our measure screw
-/turns 3 mm pitch div def         % Turns: depends on maximum measure distance
 
-/strip-fill-fraction 0.75 def  % What width of the spiral text strip is used.
+/inner-radius 15 mm def
+/outer-radius spherometer-radius 5 mm add def
+/center-hole-radius 3 mm def
+
+/font-size 9 def
+/text-line-clearance 0.3 mm def   % Text above measure tick-line
+/text-spacing 1.2 mm def          % Leave at least this amount to next tick
+
+/turns 2.1 mm pitch div 1 add def % Turns: depends on maximum measure distance
+
+/strip-fill-fraction 0.80 def  % What width of the spiral text strip is used.
 
 /strip-width outer-radius inner-radius sub turns div def
 /PI 3.1415926 def
 
 0 setlinewidth
-/Helvetica findfont font-size scalefont setfont
-outer-radius dup translate
+outer-radius 5 mm add dup translate
 
-% rotate-pos (text)
+center-hole-radius 0 moveto 0 0 center-hole-radius 0 360 arc stroke
+outer-radius 0 moveto 0 0 outer-radius 0 360 arc stroke
+inner-radius 0 moveto 0 0 inner-radius 0 360 arc stroke
+
+% Input: radius, output: sag
+/radius-to-sag {
+    dup
+    dup mul
+    spherometer-radius dup mul
+    sub
+    sqrt
+    sub
+} def
+
+% rotate-pos-in-mm (text) (suffix) -> difference
 /write-at {
     1 dict begin
+    /suffix exch def
     /txt exch def
     /rotate-pos exch def
     /radius outer-radius rotate-pos pitch div strip-width mul sub def
-    gsave
-    rotate-pos pitch div 360 mul rotate
-    % tick mark:
-    radius neg 0 moveto strip-width strip-fill-fraction mul 0 rlineto stroke
+    % Only draw if we comfortably with within the constraint
+    radius strip-width sub inner-radius ge {
+	gsave
+	rotate-pos pitch div 360 mul rotate
+	% tick mark:
+	radius neg 0 moveto strip-width strip-fill-fraction mul 0 rlineto stroke
 
-    radius neg strip-width strip-fill-fraction mul add txt stringwidth pop sub
-    text-line-clearance moveto txt show
-    grestore
-    rotate-pos
-      font-size text-line-clearance text-spacing add add   % Amount we want to clear
-      radius PI mul 2 mul  % Full diameter at current pos
-      div                  % Fraction of a turn until we're clear
-      pitch mul
-      add
+	radius neg
+	strip-width strip-fill-fraction mul add
+	txt stringwidth pop sub
+	suffix stringwidth pop sub
+	text-line-clearance moveto txt show suffix show
+	grestore
+    } if
+    font-size text-line-clearance text-spacing add add   % Amount we want to clear
+    radius PI mul 2 mul  % Full diameter at current pos
+    div                  % Fraction of a turn until we're clear
+    pitch mul
     end
 } def
 
@@ -50,14 +71,73 @@ outer-radius dup translate
     1000 mul cvi (       ) cvs
 } def
 
-/next -1 def
-0 0.0001 3 {
-    /sag-in-mm exch def
-    sag-in-mm mm next ge {
-	sag-in-mm mm
-	sag-in-mm gen-measure-text
-	write-at
-	/next exch def
+% Don't put a label on zero. _Maybe_ infinite symbol might make sense
+/Helvetica-Bold findfont font-size scalefont setfont
+0 0 1 setrgbcolor
+0 (flat) () write-at
+pop
+
+% TODO: right now, we manually choose ranges. This should be somewhat automatic
+% finding 'good looking' steps, e.g. in 1, 2, 5 (10, 20...) with potential
+% tick-marks at 0.5, 1 if two consecutive numbers can't be printed.
+
+/Helvetica findfont font-size scalefont setfont
+0 0 0 setrgbcolor
+/next 100000 def
+
+% 5mm steps, print in cm with one decimal
+100 5 795 {
+    /mm-radius exch def
+    /sag mm-radius mm radius-to-sag def
+    sag next lt {
+	/next sag
+	sag mm-radius 10 div cvr (           ) cvs () write-at
+	sub def
+    } if
+} for
+
+% 1 cm steps, but keep the one decimal until we hit 1m
+800 10 990 {
+    /mm-radius exch def
+    /sag mm-radius mm radius-to-sag def
+    sag next lt {
+	/next sag
+	sag mm-radius 10 div cvr (           ) cvs () write-at
+	sub def
+    } if
+} for
+
+% 1 cm steps until things get too tight.
+1000 10 2700 {
+    /mm-radius exch def
+    /sag mm-radius mm radius-to-sag def
+    sag next lt {
+	/next sag
+	sag mm-radius 10 div cvi (           ) cvs () write-at
+	sub def
+    } if
+} for
+
+% Now in 5 cm steps
+2750 50 5000 {
+    /mm-radius exch def
+    /sag mm-radius mm radius-to-sag def
+    sag next lt {
+	/next sag
+	sag mm-radius 10 div cvi (           ) cvs () write-at
+	sub def
+    } if
+} for
+
+% Switch to meter. Smaller font
+/Helvetica findfont font-size 0.8 mul scalefont setfont
+5000 100 12000 {
+    /mm-radius exch def
+    /sag mm-radius mm radius-to-sag def
+    sag next lt {
+	/next sag
+	sag mm-radius 1000 div cvr (           ) cvs (m) write-at
+	sub def
     } if
 } for
 
