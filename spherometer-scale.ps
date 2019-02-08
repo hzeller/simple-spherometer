@@ -1,5 +1,6 @@
 %!PS
 %%BoundingBox: 0 0 340 340
+
 /mm { 72 25.4 div mul } bind def
 /inch { 72 mul } bind def
 
@@ -64,11 +65,6 @@ inner-radius 0 moveto 0 0 inner-radius 0 360 arc stroke
     div                  % Fraction of a turn until we're clear
     pitch mul
     end
-} def
-
-% millimeter -> (txt)
-/gen-measure-text {
-    1000 mul cvi (       ) cvs
 } def
 
 % Don't put a label on zero. _Maybe_ infinite symbol might make sense
