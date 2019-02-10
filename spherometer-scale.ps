@@ -1,10 +1,9 @@
 %!PS
-%%BoundingBox: 0 0 340 340
+
 
 /mm { 72 25.4 div mul } bind def
 /inch { 72 mul } bind def
 
-/is_metric true def
 /spherometer-radius 50 mm def     % Radius of circle circumscribing the legs
 /pitch 0.5 mm def                 % Pitch of our measure screw (M3)
 
@@ -12,9 +11,9 @@
 /outer-radius spherometer-radius 5 mm add def
 /center-hole-radius 0.2 mm def
 
-/font-size 9 def
+/font-size 11 def
 /text-line-clearance 0.3 mm def   % Text above measure tick-line
-/text-spacing 1.2 mm def          % Leave at least this amount to next tick
+/text-spacing 0.75 mm def          % Leave at least this amount to next tick
 
 /turns 2.1 mm pitch div 1 add def % Turns: depends on maximum measure distance
 
@@ -24,11 +23,6 @@
 /PI 3.1415926 def
 
 0 setlinewidth
-outer-radius 5 mm add dup translate
-
-center-hole-radius 0 moveto 0 0 center-hole-radius 0 360 arc stroke
-outer-radius 0 moveto 0 0 outer-radius 0 360 arc stroke
-inner-radius 0 moveto 0 0 inner-radius 0 360 arc stroke
 
 % Input: radius, output: sag
 /radius-to-sag {
@@ -93,20 +87,30 @@ inner-radius 0 moveto 0 0 inner-radius 0 360 arc stroke
     end
 } def
 
-% Don't put a label on zero. _Maybe_ infinite symbol might make sense
-/Helvetica-Bold findfont font-size 1.2 mul scalefont setfont
-0 0 1 setrgbcolor
-0 (flat) () write-at
-pop
+/disk-boilerplate {
+    center-hole-radius 0 moveto 0 0 center-hole-radius 0 360 arc stroke
+    outer-radius 0 moveto 0 0 outer-radius 0 360 arc stroke
+    inner-radius 0 moveto 0 0 inner-radius 0 360 arc stroke
+
+    % Don't put a label on zero. _Maybe_ infinite symbol might make sense
+    /Helvetica-Bold findfont font-size 1.2 mul scalefont setfont
+    0 0 1 setrgbcolor
+    0 (flat) () write-at
+    pop
+
+    /Helvetica findfont font-size scalefont setfont
+    0 0 0 setrgbcolor
+
+    /Helvetica findfont 7 scalefont setfont
+    outer-radius 3 mm sub -60 false (github.com/hzeller/simple-spherometer) radius-print
+    /Helvetica findfont font-size scalefont setfont
+} def
 
 % TODO: right now, we manually choose ranges. This should be somewhat automatic
 % finding 'good looking' steps, e.g. in 1, 2, 5 (10, 20...) with potential
 % tick-marks at 0.5, 1 if two consecutive numbers can't be printed.
 % OTHO, maybe hand-optimizing for a particular size disk is sufficient.
 
-/Helvetica findfont font-size scalefont setfont
-0 0 0 setrgbcolor
-/next 100000 def
 
 % Essentially, we're going through 'round' values of mm or inches and see
 % if we can print them non-interferingly with previous numbers (stored in
@@ -114,7 +118,10 @@ pop
 % We have various loops that use different increments, e.g. in lower areas
 % we'd like to have 1cm increments, while in higher 5cm or 10cm is more
 % useful.
-is_metric {
+/metric-disk {
+    disk-boilerplate
+    /numbers-written 0 def
+    /next 100000 def
     % 5mm steps, print in cm with one decimal
     600 10 795 {
 	/mm-radius exch def
@@ -123,6 +130,7 @@ is_metric {
 	    /next sag
 	    sag mm-radius 10 div cvi (           ) cvs () write-at
 	    sub def
+	    /numbers-written numbers-written 1 add def
 	} if
     } for
 
@@ -134,6 +142,7 @@ is_metric {
 	    /next sag
 	    sag mm-radius 10 div cvi (           ) cvs () write-at
 	    sub def
+	    /numbers-written numbers-written 1 add def
 	} if
     } for
 
@@ -145,6 +154,7 @@ is_metric {
 	    /next sag
 	    sag mm-radius 10 div cvi (           ) cvs () write-at
 	    sub def
+	    /numbers-written numbers-written 1 add def
 	} if
     } for
 
@@ -156,9 +166,11 @@ is_metric {
 	    /next sag
 	    sag mm-radius 10 div cvi (           ) cvs () write-at
 	    sub def
+	    /numbers-written numbers-written 1 add def
 	} if
     } for
 
+    /Helvetica findfont font-size 0.9 mul scalefont setfont
     % Switch to meter.
     5000 100 8999 {
 	/mm-radius exch def
@@ -167,6 +179,7 @@ is_metric {
 	    /next sag
 	    sag mm-radius 1000 div cvr (           ) cvs (m) write-at
 	    sub def
+	    /numbers-written numbers-written 1 add def
 	} if
     } for
 
@@ -177,6 +190,7 @@ is_metric {
 	    /next sag
 	    sag mm-radius 1000 div cvi (           ) cvs (m) write-at
 	    sub def
+	    /numbers-written numbers-written 1 add def
 	} if
     } for
 
@@ -187,6 +201,7 @@ is_metric {
 	    /next sag
 	    sag mm-radius 1000 div cvi (           ) cvs (m) write-at
 	    sub def
+	    /numbers-written numbers-written 1 add def
 	} if
     } for
 
@@ -195,27 +210,38 @@ is_metric {
     outer-radius 5 mm sub 80 false (metric) radius-print
     /Helvetica findfont 7 scalefont setfont
     14 mm 24 true (\(sphere radius\)) radius-print
-} {
+
+    % Info scale density
+    outer-radius 10 mm add 0 moveto numbers-written (       ) cvs show
+    ( scale numbers) show
+} def
+
+/imperial-disk {
+    disk-boilerplate
+    /numbers-written 0 def
+    /next 100000 def
     % TODO: there are probably more pleasing ways to display this,
     % e.g. longer values with feet/inches. Maybe for values displayed that way,
     % people might also prefer increments of 3 instead of 5 ?
-    20 0.5 48.5 {
+    20 0.5 46.5 {
 	/inch-radius exch def
 	/sag inch-radius inch radius-to-sag def
 	sag next lt {
 	    /next sag
 	    sag inch-radius cvr (           ) cvs () write-at
 	    sub def
+	    /numbers-written numbers-written 1 add def
 	} if
     } for
 
-    49 1 74 {
+    47 1 74 {
 	/inch-radius exch def
 	/sag inch-radius inch radius-to-sag def
 	sag next lt {
 	    /next sag
 	    sag inch-radius cvi (           ) cvs () write-at
 	    sub def
+	    /numbers-written numbers-written 1 add def
 	} if
     } for
 
@@ -226,6 +252,7 @@ is_metric {
 	    /next sag
 	    sag inch-radius cvi (           ) cvs () write-at
 	    sub def
+	    /numbers-written numbers-written 1 add def
 	} if
     } for
 
@@ -236,6 +263,7 @@ is_metric {
 	    /next sag
 	    sag inch-radius cvi (           ) cvs () write-at
 	    sub def
+	    /numbers-written numbers-written 1 add def
 	} if
     } for
 
@@ -246,6 +274,7 @@ is_metric {
 	    /next sag
 	    sag inch-radius 12 div cvi (           ) cvs (') write-at
 	    sub def
+	    /numbers-written numbers-written 1 add def
 	} if
     } for
 
@@ -254,9 +283,13 @@ is_metric {
     16 mm -10 true (inch) radius-print
     /Helvetica findfont 7 scalefont setfont
     15 mm 24 true (\(sphere radius\)) radius-print
-} ifelse
 
-/Helvetica findfont 7 scalefont setfont
-outer-radius 3 mm sub -60 false (github.com/hzeller/simple-spherometer) radius-print
+    % Info scale density
+    outer-radius 10 mm add 0 moveto numbers-written (       ) cvs show
+    ( scale numbers) show
+} def
+
+outer-radius 15 mm add outer-radius 15 mm add translate metric-disk
+0 outer-radius 2.2 mul translate imperial-disk
 
 showpage
