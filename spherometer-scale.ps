@@ -4,12 +4,13 @@
 /mm { 72 25.4 div mul } bind def
 /inch { 72 mul } bind def
 
+/is_metric true def
 /spherometer-radius 50 mm def     % Radius of circle circumscribing the legs
-/pitch 0.5 mm def                 % Pitch of our measure screw
+/pitch 0.5 mm def                 % Pitch of our measure screw (M3)
 
-/inner-radius 15 mm def
+/inner-radius 15 mm 2 div def
 /outer-radius spherometer-radius 5 mm add def
-/center-hole-radius 3 mm def
+/center-hole-radius 0.2 mm def
 
 /font-size 9 def
 /text-line-clearance 0.3 mm def   % Text above measure tick-line
@@ -67,8 +68,33 @@ inner-radius 0 moveto 0 0 inner-radius 0 360 arc stroke
     end
 } def
 
+% r start-angle bool_is_left (txt) ->
+/radius-print {
+    1 dict begin
+    /txt exch def
+    /is-left exch def
+    /start-angle exch def
+    is-left { neg } if
+    /r exch def
+    gsave
+    start-angle rotate
+    0 r moveto
+
+    /onechar ( ) def
+    txt {
+	onechar 0 3 -1 roll put
+	onechar show
+	onechar stringwidth pop r abs atan
+        is-left not { neg } if rotate
+	0 r moveto
+    } forall
+    %txt show
+    grestore
+    end
+} def
+
 % Don't put a label on zero. _Maybe_ infinite symbol might make sense
-/Helvetica-Bold findfont font-size scalefont setfont
+/Helvetica-Bold findfont font-size 1.2 mul scalefont setfont
 0 0 1 setrgbcolor
 0 (flat) () write-at
 pop
@@ -76,65 +102,161 @@ pop
 % TODO: right now, we manually choose ranges. This should be somewhat automatic
 % finding 'good looking' steps, e.g. in 1, 2, 5 (10, 20...) with potential
 % tick-marks at 0.5, 1 if two consecutive numbers can't be printed.
+% OTHO, maybe hand-optimizing for a particular size disk is sufficient.
 
 /Helvetica findfont font-size scalefont setfont
 0 0 0 setrgbcolor
 /next 100000 def
 
-% 5mm steps, print in cm with one decimal
-100 5 795 {
-    /mm-radius exch def
-    /sag mm-radius mm radius-to-sag def
-    sag next lt {
-	/next sag
-	sag mm-radius 10 div cvr (           ) cvs () write-at
-	sub def
-    } if
-} for
+% Essentially, we're going through 'round' values of mm or inches and see
+% if we can print them non-interferingly with previous numbers (stored in
+% the 'next' variable.
+% We have various loops that use different increments, e.g. in lower areas
+% we'd like to have 1cm increments, while in higher 5cm or 10cm is more
+% useful.
+is_metric {
+    % 5mm steps, print in cm with one decimal
+    600 10 795 {
+	/mm-radius exch def
+	/sag mm-radius mm radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag mm-radius 10 div cvi (           ) cvs () write-at
+	    sub def
+	} if
+    } for
 
-% 1 cm steps, but keep the one decimal until we hit 1m
-800 10 990 {
-    /mm-radius exch def
-    /sag mm-radius mm radius-to-sag def
-    sag next lt {
-	/next sag
-	sag mm-radius 10 div cvr (           ) cvs () write-at
-	sub def
-    } if
-} for
+    % 1 cm steps, but keep the one decimal until we hit 1m
+    800 10 990 {
+	/mm-radius exch def
+	/sag mm-radius mm radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag mm-radius 10 div cvi (           ) cvs () write-at
+	    sub def
+	} if
+    } for
 
-% 1 cm steps until things get too tight.
-1000 10 2700 {
-    /mm-radius exch def
-    /sag mm-radius mm radius-to-sag def
-    sag next lt {
-	/next sag
-	sag mm-radius 10 div cvi (           ) cvs () write-at
-	sub def
-    } if
-} for
+    % 1 cm steps until things get too tight.
+    1000 10 2700 {
+	/mm-radius exch def
+	/sag mm-radius mm radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag mm-radius 10 div cvi (           ) cvs () write-at
+	    sub def
+	} if
+    } for
 
-% Now in 5 cm steps
-2750 50 5000 {
-    /mm-radius exch def
-    /sag mm-radius mm radius-to-sag def
-    sag next lt {
-	/next sag
-	sag mm-radius 10 div cvi (           ) cvs () write-at
-	sub def
-    } if
-} for
+    % Now in 5 cm steps
+    2750 50 5000 {
+	/mm-radius exch def
+	/sag mm-radius mm radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag mm-radius 10 div cvi (           ) cvs () write-at
+	    sub def
+	} if
+    } for
 
-% Switch to meter. Smaller font
-/Helvetica findfont font-size 0.8 mul scalefont setfont
-5000 100 12000 {
-    /mm-radius exch def
-    /sag mm-radius mm radius-to-sag def
-    sag next lt {
-	/next sag
-	sag mm-radius 1000 div cvr (           ) cvs (m) write-at
-	sub def
-    } if
-} for
+    % Switch to meter.
+    5000 100 8999 {
+	/mm-radius exch def
+	/sag mm-radius mm radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag mm-radius 1000 div cvr (           ) cvs (m) write-at
+	    sub def
+	} if
+    } for
+
+    9000 1000 13000 {
+	/mm-radius exch def
+	/sag mm-radius mm radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag mm-radius 1000 div cvi (           ) cvs (m) write-at
+	    sub def
+	} if
+    } for
+
+    15000 5000 25000 {
+	/mm-radius exch def
+	/sag mm-radius mm radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag mm-radius 1000 div cvi (           ) cvs (m) write-at
+	    sub def
+	} if
+    } for
+
+    /Helvetica-Bold findfont 12 scalefont setfont
+    (cm) stringwidth pop 2 div neg -14 mm moveto (cm) show
+    outer-radius 5 mm sub 80 false (metric) radius-print
+    /Helvetica findfont 7 scalefont setfont
+    14 mm 24 true (\(sphere radius\)) radius-print
+} {
+    % TODO: there are probably more pleasing ways to display this,
+    % e.g. longer values with feet/inches. Maybe for values displayed that way,
+    % people might also prefer increments of 3 instead of 5 ?
+    20 0.5 48.5 {
+	/inch-radius exch def
+	/sag inch-radius inch radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag inch-radius cvr (           ) cvs () write-at
+	    sub def
+	} if
+    } for
+
+    49 1 74 {
+	/inch-radius exch def
+	/sag inch-radius inch radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag inch-radius cvi (           ) cvs () write-at
+	    sub def
+	} if
+    } for
+
+    76 2 120 {
+	/inch-radius exch def
+	/sag inch-radius inch radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag inch-radius cvi (           ) cvs () write-at
+	    sub def
+	} if
+    } for
+
+    125 5 275 {
+	/inch-radius exch def
+	/sag inch-radius inch radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag inch-radius cvi (           ) cvs () write-at
+	    sub def
+	} if
+    } for
+
+    276 12 1000 {
+	/inch-radius exch def
+	/sag inch-radius inch radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag inch-radius 12 div cvi (           ) cvs (') write-at
+	    sub def
+	} if
+    } for
+
+    /Helvetica-Bold findfont 12 scalefont setfont
+    outer-radius 5 mm sub 80 false (imperial) radius-print
+    16 mm -10 true (inch) radius-print
+    /Helvetica findfont 7 scalefont setfont
+    15 mm 24 true (\(sphere radius\)) radius-print
+} ifelse
+
+/Helvetica findfont 7 scalefont setfont
+outer-radius 3 mm sub -60 false (github.com/hzeller/simple-spherometer) radius-print
 
 showpage
