@@ -8,11 +8,11 @@ knob_knurl_depth=2;
 knob_dividers=52;  // Should be the number of detents in rotatry encoder
 knob_top_roundness=3;
 
-module base_knob(r=knob_dia/2, h=knob_height) {
+module base_knob(r=knob_dia/2, h=knob_height, roundness=knob_top_roundness) {
     hull() {
 	cylinder(r=r,h=1);
-	translate([0,0,h - knob_top_roundness])
-	   rotate_extrude(convexity=10) translate([r - knob_top_roundness,0,0]) circle(r=knob_top_roundness);
+	translate([0,0,h - roundness])
+	   rotate_extrude(convexity=10) translate([r - roundness,0,0]) circle(r=roundness);
     }
 }
 
@@ -54,9 +54,9 @@ module knurls(r=knob_dia/2, h=knob_height, depth=knob_knurl_depth,
     }
 }
 
-module knurl_knob(r=knob_dia/2, h=knob_height, depth=knob_knurl_depth, segments=10) {
+module knurl_knob(r=knob_dia/2, h=knob_height, depth=knob_knurl_depth, segments=10, roundness=3) {
     intersection() {
 	knurls(r=r, h=h, depth=depth, segments=segments);
-	base_knob(r=r, h=h);
+	base_knob(r=r, h=h, roundness=roundness);
     }
 }

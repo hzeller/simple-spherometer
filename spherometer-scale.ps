@@ -7,13 +7,13 @@
 /spherometer-radius 50 mm def     % Radius of circle circumscribing the legs
 /pitch 0.5 mm def                 % Pitch of our measure screw (M3)
 
-/inner-radius 15 mm 2 div def
+/inner-radius 20 mm 2 div def     % 15 mm plus some airbubble margin.
 /outer-radius spherometer-radius 5 mm add def
 /center-hole-radius 0.2 mm def
 
-/font-size 11 def
+/font-size 11 def                 % As large as possible for maximum readability
 /text-line-clearance 0.3 mm def   % Text above measure tick-line
-/text-spacing 0.75 mm def          % Leave at least this amount to next tick
+/text-spacing 0.75 mm def         % Leave at least this amount to next tick
 
 /turns 2.1 mm pitch div 1 add def % Turns: depends on maximum measure distance
 
@@ -93,7 +93,7 @@
     inner-radius 0 moveto 0 0 inner-radius 0 360 arc stroke
 
     % Don't put a label on zero. _Maybe_ infinite symbol might make sense
-    /Helvetica-Bold findfont font-size 1.2 mul scalefont setfont
+    /Helvetica-Bold findfont font-size 1.1 mul scalefont setfont
     0 0 1 setrgbcolor
     0 (flat) () write-at
     pop
@@ -289,6 +289,12 @@
     ( scale numbers) show
 } def
 
+% Some instructions, because it is easy to forget to cut out before laminating.
+/Helvetica findfont 12 scalefont setfont
+30 mm 260 mm moveto
+(\(1\) Cut outside and inside circle. \(2\) laminate disk.) show
+30 mm 255 mm moveto
+(\(3\) Finally, cut out out from laminate, outside the 'airbubble' margin.) show
 outer-radius 15 mm add outer-radius 15 mm add translate metric-disk
 0 outer-radius 2.2 mul translate imperial-disk
 
