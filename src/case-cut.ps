@@ -6,11 +6,11 @@
 
 /spherometer-radius 50 mm def     % Radius of circle circumscribing the legs
 /leg-hole-dia 7 mm def            % Enough to glue on a ball.
-/hexnut-dia 5.75 mm def           % Measured on both the flat sides.
+/hexnut-dia 4.69 mm def           % Measured on both the flat sides.
 
-% The speherometer disk is 5mm more than the radius (see speherometer-scale.ps)
+% The speherometer disk is 5mm more than the radius (see spherometer-scale.ps)
 % plus a little extra for the lamination edge (adjust to your actual dimensions)
-/spherometer-disk-radius spherometer-radius 5 mm add 2.5 mm add def
+/spherometer-disk-radius spherometer-radius 5 mm add 3 mm add def
 
 /bearing-dia 15.2 mm def            % Center hole for the turn knob.
 /mounting-screw-dia 3.25 mm def     % an M3 screw with some extra slop.
@@ -19,13 +19,15 @@
 /outer-radius spherometer-disk-radius mounting-screw-head-dia add def
 /mount-screw-pos spherometer-disk-radius mounting-screw-head-dia 2 div add def
 
-/adjust-slot-angle 8 def
+/adjust-slot-angle 10 def
 
-/outer-cut { 0 0 0 setrgbcolor } def  % for kerf outside
-/inner-cut { 1 0 0 setrgbcolor } def  % for kerf inside
+/outer-cut { 0 0 0 setrgbcolor } def    % for kerf outside
+/inner-cut { 1 0 0 setrgbcolor } def    % for kerf inside
+/engrave-cut { 0 1 0 setrgbcolor } def  % engraving.
 /info-layer  { 0.5 setgray } def
 
-% Draws a hexnut in the current origin.
+% Draws a hexnut around the current origin. Measurement given is the in-circle
+% (which can be easily measured with calipers, as it is flat-end to flat-end)
 % incircle ->
 /hexnut {
     1 dict begin
@@ -38,6 +40,7 @@
     end
 } def
 
+% Curved slot on the outside to allow for scale adjustments
 /adjust-slot {
     gsave
     adjust-slot-angle neg rotate
@@ -58,7 +61,8 @@
     grestore
 } def
 
-/lower-disk {
+% The underside disk, where the balls are mounted
+/bottom-disk {
     outer-cut
     outer-radius 0 moveto
     0 0 outer-radius 0 360 arc stroke
@@ -80,7 +84,8 @@
     grestore
 } def
 
-/upper-disk {
+% To top disk, covering up the scale and providing an indicator
+/cover-disk {
     outer-cut
     outer-radius 0 moveto
     0 0 outer-radius 0 360 arc stroke
@@ -97,8 +102,14 @@
 	mount-screw-pos 0 mounting-screw-dia 2 div 0 360 arc stroke
     } repeat
     grestore
+
+    engrave-cut
+    bearing-dia 2 div 0 moveto
+    spherometer-disk-radius 0 lineto stroke
 } def
 
+% Rounded spacer around the scale, providing the space between bottom and
+% cover disk. Only a third, because cutting that wastes less space.
 /distance-holder {
     outer-cut
     gsave
@@ -122,6 +133,7 @@
     adjust-slot
 } def
 
+% three distance holders make one circle.
 /distance-holders {
     gsave
     60 rotate
@@ -134,6 +146,7 @@
     grestore
 } def
 
+% Testing various dimensions before wasting all the acrylic.
 /test-swatch {
     1 dict begin
     gsave
@@ -169,14 +182,16 @@
 
 % Stuff to be cut on thin 3mm acrylic
 /thin-acrylic {
-    upper-disk
+    cover-disk
     distance-holders
 } def
 
 /thick-acrylic {
-    lower-disk
+    bottom-disk
 } def
 
 100 mm 100 mm translate
 
-%test-swatch showpage
+% The makefile generates something like
+% thin-acrylic showpage
+% and appends it to this file to output something of interest.
