@@ -1,19 +1,19 @@
 TARGETS=spherometer-scale.pdf spherometer-knob.stl \
       case-cut-test-swatch.dxf \
-      case-cut-thick-acrylic.dxf case-cut-thin-acrylic.ps
+      case-cut-thick-acrylic.dxf case-cut-thin-acrylic.dxf
 
 all: $(TARGETS)
 
-%.stl: %.scad
+%.stl: src/%.scad
 	openscad -o $@ $^
 
-case-cut-%.ps : case-cut.ps
+src/case-cut-%.ps : src/case-cut.ps
 	(cat $< ; echo "$* showpage") > $@
 
-%.pdf: %.ps
+%.pdf: src/%.ps
 	ps2pdf $^ $@
 
-%.dxf: %.ps
+%.dxf: src/%.ps
 	pstoedit -psarg "-r600x600" -nb -mergetext -dt -f "dxf_s:-mm -ctl" $< $@
 
 clean:

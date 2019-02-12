@@ -1,4 +1,4 @@
-use <lib/knurled-knob.scad>
+use <knurled-knob.scad>
 
 $fn=64;
 e=0.01;
