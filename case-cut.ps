@@ -1,0 +1,182 @@
+%!PS
+% Generating cut patterns for the acylic.
+
+/mm { 72 25.4 div mul } bind def
+/inch { 72 mul } bind def
+
+/spherometer-radius 50 mm def     % Radius of circle circumscribing the legs
+/leg-hole-dia 7 mm def            % Enough to glue on a ball.
+/hexnut-dia 5.75 mm def           % Measured on both the flat sides.
+
+% The speherometer disk is 5mm more than the radius (see speherometer-scale.ps)
+% plus a little extra for the lamination edge (adjust to your actual dimensions)
+/spherometer-disk-radius spherometer-radius 5 mm add 2.5 mm add def
+
+/bearing-dia 15.2 mm def            % Center hole for the turn knob.
+/mounting-screw-dia 3.25 mm def     % an M3 screw with some extra slop.
+/mounting-screw-head-dia 8 mm def   % Decides how far we screw from the edge.
+
+/outer-radius spherometer-disk-radius mounting-screw-head-dia add def
+/mount-screw-pos spherometer-disk-radius mounting-screw-head-dia 2 div add def
+
+/adjust-slot-angle 8 def
+
+/outer-cut { 0 0 0 setrgbcolor } def  % for kerf outside
+/inner-cut { 1 0 0 setrgbcolor } def  % for kerf inside
+/info-layer  { 0.5 setgray } def
+
+% Draws a hexnut in the current origin.
+% incircle ->
+/hexnut {
+    1 dict begin
+    30 cos div /r exch def
+    gsave
+    r 0 moveto
+    6 {	60 rotate r 0 lineto } repeat
+    stroke
+    grestore
+    end
+} def
+
+/adjust-slot {
+    gsave
+    adjust-slot-angle neg rotate
+    mount-screw-pos mounting-screw-dia 2 div add 0 moveto
+    0 0 mount-screw-pos mounting-screw-dia 2 div add
+    0 adjust-slot-angle 2 mul arc    % Outer arc
+
+    adjust-slot-angle 2 mul rotate   % Let's adjust to have this to simple cords
+
+    mount-screw-pos 0 mounting-screw-dia 2 div 0 180 arc  % slot-end round
+
+    0 0 mount-screw-pos mounting-screw-dia 2 div sub   %  big arc back
+    0 adjust-slot-angle 2 mul neg arcn
+
+    adjust-slot-angle 2 mul neg rotate
+    mount-screw-pos 0 mounting-screw-dia 2 div 180 360 arc  % slot-end round
+    stroke
+    grestore
+} def
+
+/lower-disk {
+    outer-cut
+    outer-radius 0 moveto
+    0 0 outer-radius 0 360 arc stroke
+
+    % We want the hexnut with the flat sides pointing to the balls
+    inner-cut
+    gsave 30 rotate hexnut-dia 2 div hexnut grestore
+    gsave
+    3 {
+	120 rotate
+	spherometer-radius leg-hole-dia 2 div add 0 moveto
+	spherometer-radius 0 leg-hole-dia 2 div 0 360 arc stroke
+    } repeat
+    60 rotate
+    3 {
+	120 rotate
+	adjust-slot
+    } repeat
+    grestore
+} def
+
+/upper-disk {
+    outer-cut
+    outer-radius 0 moveto
+    0 0 outer-radius 0 360 arc stroke
+
+    inner-cut
+    bearing-dia 2 div 0 moveto
+    0 0 bearing-dia 2 div 0 360 arc stroke
+
+    gsave
+    60 rotate
+    3 {
+	120 rotate
+	mount-screw-pos mounting-screw-dia 2 div add 0 moveto
+	mount-screw-pos 0 mounting-screw-dia 2 div 0 360 arc stroke
+    } repeat
+    grestore
+} def
+
+/distance-holder {
+    outer-cut
+    gsave
+    -60 rotate
+    outer-radius 0 moveto
+    0 0 outer-radius 0 120 arc
+
+    120 rotate   % Let's adjust to have this to simple cords
+
+    mounting-screw-head-dia neg 0 rlineto
+
+    0 0 outer-radius mounting-screw-head-dia sub   %  big arc back
+    0 120 neg arcn
+
+    -120 rotate
+    mounting-screw-head-dia 0 rlineto
+    stroke
+    grestore
+
+    inner-cut
+    adjust-slot
+} def
+
+/distance-holders {
+    gsave
+    60 rotate
+    3 {
+	120 rotate
+	mounting-screw-head-dia 2 mul 0 translate
+	distance-holder
+	mounting-screw-head-dia 2 mul neg 0 translate
+    } repeat
+    grestore
+} def
+
+/test-swatch {
+    1 dict begin
+    gsave
+    /Helvetica findfont 10 scalefont setfont
+    % Various measurements of hex nuts
+    -0.05 0.01 0.05 {
+	mm hexnut-dia add /val exch def
+	inner-cut
+	gsave 30 rotate val 2 div hexnut grestore
+	info-layer
+	0 -8 mm moveto
+	val 1 mm div 100 mul cvi 100 div (      ) cvs
+	dup stringwidth pop 2 div neg 0 rmoveto
+	show
+	0 setgray
+	10 mm 0 translate
+    } for
+    grestore
+
+    gsave
+    inner-cut
+    5 mm 15 mm translate
+    0 0 bearing-dia 2 div 0 360 arc stroke
+
+    bearing-dia leg-hole-dia add 2 div 5 mm add 0 translate
+    0 0 leg-hole-dia 2 div 0 360 arc stroke
+
+    leg-hole-dia mounting-screw-dia add 2 div 5 mm add 0 translate
+    0 0 mounting-screw-dia 2 div 0 360 arc stroke
+    grestore
+    end
+} def
+
+% Stuff to be cut on thin 3mm acrylic
+/thin-acrylic {
+    upper-disk
+    distance-holders
+} def
+
+/thick-acrylic {
+    lower-disk
+} def
+
+100 mm 100 mm translate
+
+%test-swatch showpage

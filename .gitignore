@@ -1,0 +1,5 @@
+*.stl
+*.pdf
+*.dxf
+case-cut-*.ps
+*~
