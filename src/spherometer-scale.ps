@@ -1,9 +1,9 @@
 %!PS
 
-
 /mm { 72 25.4 div mul } bind def
 /inch { 72 mul } bind def
 
+/imperial-print-with-fraction true def  % print 0.5 fractions as 1/2 in imperial
 /spherometer-radius 50 mm def     % Radius of circle circumscribing the legs
 /pitch 0.5 mm def                 % Pitch of our measure screw (M3)
 
@@ -21,6 +21,15 @@
 
 /strip-width outer-radius inner-radius sub turns div def
 /PI 3.1415926 def
+
+% Use Latin1 encoding, because it has a 1/2 character
+/Helvetica findfont
+dup length dict begin
+{1 index /FID ne {def}{pop pop} ifelse} forall
+/Encoding ISOLatin1Encoding def
+currentdict
+end
+/Helvetica-latin1 exch definefont pop
 
 0 setlinewidth
 
@@ -216,24 +225,71 @@
     ( scale numbers) show
 } def
 
+% (a) (b) -> (ab)
+/strcat {
+    exch dup length
+    2 index length add string
+    dup dup 4 2 roll copy length
+    4 -1 roll putinterval
+} def
+
+% Print an inch value
+/cvs-with-fraction {
+    imperial-print-with-fraction {
+	100 mul cvi
+	dup 100 mod 0 eq {
+	    100 div cvi (       ) cvs (   ) strcat
+	} {
+	    dup 100 mod 25 eq {
+		100 div cvi (       ) cvs (\274) strcat
+	    } {
+		dup 100 mod 50 eq {
+		    100 div cvi (       ) cvs (\275) strcat
+		} {
+		    100 div cvi (       ) cvs (\276) strcat
+		} ifelse
+	    } ifelse
+	} ifelse
+    } {
+	cvr (        ) cvs
+    } ifelse
+} def
+
 /imperial-disk {
     disk-boilerplate
     /numbers-written 0 def
     /next 100000 def
+    % Make this a bit smaller, as the 25.5 or 25 1/2 numbers are a little longer
+    /Helvetica-latin1 findfont font-size 0.9 mul scalefont setfont
     % TODO: there are probably more pleasing ways to display this,
     % e.g. longer values with feet/inches. Maybe for values displayed that way,
     % people might also prefer increments of 3 instead of 5 ?
-    20 0.5 46.5 {
+
+    % If we write fractions, we can write quarters because they are more
+    % compact than xx.25. So here we choose the quantization accordingly
+    20 imperial-print-with-fraction {0.25}{0.5} ifelse 27 {
 	/inch-radius exch def
 	/sag inch-radius inch radius-to-sag def
 	sag next lt {
 	    /next sag
-	    sag inch-radius cvr (           ) cvs () write-at
+	    sag inch-radius cvs-with-fraction () write-at
 	    sub def
 	    /numbers-written numbers-written 1 add def
 	} if
     } for
 
+    27.5 0.5 46.5 {
+	/inch-radius exch def
+	/sag inch-radius inch radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag inch-radius cvs-with-fraction () write-at
+	    sub def
+	    /numbers-written numbers-written 1 add def
+	} if
+    } for
+
+    /Helvetica-latin1 findfont font-size scalefont setfont
     47 1 74 {
 	/inch-radius exch def
 	/sag inch-radius inch radius-to-sag def
