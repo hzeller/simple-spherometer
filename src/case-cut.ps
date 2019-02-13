@@ -5,14 +5,14 @@
 /inch { 72 mul } bind def
 
 /spherometer-radius 50 mm def     % Radius of circle circumscribing the legs
-/leg-hole-dia 7 mm def            % Enough to glue on a ball.
-/hexnut-dia 4.69 mm def           % Measured on both the flat sides.
+/leg-hole-dia 8 mm def            % Enough to glue on a ball.
+/hexnut-dia 4.7 mm def           % Measured on both the flat sides.
 
 % The speherometer disk is 5mm more than the radius (see spherometer-scale.ps)
 % plus a little extra for the lamination edge (adjust to your actual dimensions)
 /spherometer-disk-radius spherometer-radius 5 mm add 3 mm add def
 
-/bearing-dia 15.2 mm def            % Center hole for the turn knob.
+/bearing-dia 15.3 mm def            % Center hole for the turn knob.
 /mounting-screw-dia 3.25 mm def     % an M3 screw with some extra slop.
 /mounting-screw-head-dia 8 mm def   % Decides how far we screw from the edge.
 
@@ -104,8 +104,8 @@
     grestore
 
     engrave-cut
-    bearing-dia 2 div 0 moveto
-    spherometer-disk-radius 0 lineto stroke
+    bearing-dia 2 div neg 0 moveto
+    spherometer-disk-radius neg 0 lineto stroke
 } def
 
 % Rounded spacer around the scale, providing the space between bottom and
@@ -156,7 +156,7 @@
 	mm hexnut-dia add /val exch def
 	inner-cut
 	gsave 30 rotate val 2 div hexnut grestore
-	info-layer
+	engrave-cut
 	0 -8 mm moveto
 	val 1 mm div 100 mul cvi 100 div (      ) cvs
 	dup stringwidth pop 2 div neg 0 rmoveto
@@ -176,7 +176,16 @@
 
     leg-hole-dia mounting-screw-dia add 2 div 5 mm add 0 translate
     0 0 mounting-screw-dia 2 div 0 360 arc stroke
+    engrave-cut 0 0 mounting-screw-head-dia 2 div 0 360 arc stroke
     grestore
+
+    gsave
+    inner-cut
+    60 mm mount-screw-pos neg 15 mm add translate 90 rotate adjust-slot
+    grestore
+
+    engrave-cut
+    0 5 mm moveto 80 mm 0 rlineto stroke
     end
 } def
 
