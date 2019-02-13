@@ -43,10 +43,9 @@ end
     sub
 } def
 
-% rotate-pos-in-mm (text) (suffix) -> difference
+% rotate-pos-in-mm (text) -> difference
 /write-at {
     1 dict begin
-    /suffix exch def
     /txt exch def
     /rotate-pos exch def
     /radius outer-radius rotate-pos pitch div strip-width mul sub def
@@ -60,8 +59,7 @@ end
 	radius neg
 	strip-width strip-fill-fraction mul add
 	txt stringwidth pop sub
-	suffix stringwidth pop sub
-	text-line-clearance moveto txt show suffix show
+	text-line-clearance moveto txt show
 	grestore
     } if
     font-size text-line-clearance text-spacing add add   % Amount we want to clear
@@ -96,6 +94,53 @@ end
     end
 } def
 
+% (a) (b) -> (ab)
+/strcat {
+    exch dup length
+    2 index length add string
+    dup dup 4 2 roll copy length
+    4 -1 roll putinterval
+} def
+
+% Print a number with fraction. Typically used for inch values
+/cvs-with-fraction {
+    imperial-print-with-fraction {
+	100 mul cvi
+	dup 100 mod 0 eq {
+	    100 div cvi (       ) cvs (   ) strcat
+	} {
+	    dup 100 mod 25 eq {
+		100 div cvi (       ) cvs (\274) strcat
+	    } {
+		dup 100 mod 50 eq {
+		    100 div cvi (       ) cvs (\275) strcat
+		} {
+		    100 div cvi (       ) cvs (\276) strcat
+		} ifelse
+	    } ifelse
+	} ifelse
+    } {
+	cvr (        ) cvs
+    } ifelse
+} def
+
+% start step end {conversion} {print} sag-print-loop
+/sag-print-loop {
+    1 dict begin
+    /print-fun exch def
+    /conversion-fun exch def
+    {
+	/unit-radius exch def
+	/sag unit-radius conversion-fun radius-to-sag def
+	sag next lt {
+	    /next sag
+	    sag unit-radius print-fun write-at
+	    sub def
+	    /numbers-written numbers-written 1 add def
+	} if
+    } for
+} def
+
 /disk-boilerplate {
     center-hole-radius 0 moveto 0 0 center-hole-radius 0 360 arc stroke
     outer-radius 0 moveto 0 0 outer-radius 0 360 arc stroke
@@ -104,7 +149,7 @@ end
     % Don't put a label on zero. _Maybe_ infinite symbol might make sense
     /Helvetica-Bold findfont font-size 1.1 mul scalefont setfont
     0 0 1 setrgbcolor
-    0 (flat) () write-at
+    0 (flat) write-at
     pop
 
     /Helvetica findfont font-size scalefont setfont
@@ -131,88 +176,16 @@ end
     disk-boilerplate
     /numbers-written 0 def
     /next 100000 def
-    % 5mm steps, print in cm with one decimal
-    600 10 795 {
-	/mm-radius exch def
-	/sag mm-radius mm radius-to-sag def
-	sag next lt {
-	    /next sag
-	    sag mm-radius 10 div cvi (           ) cvs () write-at
-	    sub def
-	    /numbers-written numbers-written 1 add def
-	} if
-    } for
-
-    % 1 cm steps, but keep the one decimal until we hit 1m
-    800 10 990 {
-	/mm-radius exch def
-	/sag mm-radius mm radius-to-sag def
-	sag next lt {
-	    /next sag
-	    sag mm-radius 10 div cvi (           ) cvs () write-at
-	    sub def
-	    /numbers-written numbers-written 1 add def
-	} if
-    } for
-
-    % 1 cm steps until things get too tight.
-    1000 10 2700 {
-	/mm-radius exch def
-	/sag mm-radius mm radius-to-sag def
-	sag next lt {
-	    /next sag
-	    sag mm-radius 10 div cvi (           ) cvs () write-at
-	    sub def
-	    /numbers-written numbers-written 1 add def
-	} if
-    } for
-
-    % Now in 5 cm steps
-    2750 50 5000 {
-	/mm-radius exch def
-	/sag mm-radius mm radius-to-sag def
-	sag next lt {
-	    /next sag
-	    sag mm-radius 10 div cvi (           ) cvs () write-at
-	    sub def
-	    /numbers-written numbers-written 1 add def
-	} if
-    } for
+    % 1 cm steps, until things get too tight, then increasingly larger
+    % 'pleasing' round units.
+    600 10 2700    {mm} {10 div cvi (     ) cvs} sag-print-loop
+    2750 50 5000   {mm} {10 div cvi (     ) cvs} sag-print-loop
 
     /Helvetica findfont font-size 0.9 mul scalefont setfont
-    % Switch to meter.
-    5000 100 8999 {
-	/mm-radius exch def
-	/sag mm-radius mm radius-to-sag def
-	sag next lt {
-	    /next sag
-	    sag mm-radius 1000 div cvr (           ) cvs (m) write-at
-	    sub def
-	    /numbers-written numbers-written 1 add def
-	} if
-    } for
-
-    9000 1000 13000 {
-	/mm-radius exch def
-	/sag mm-radius mm radius-to-sag def
-	sag next lt {
-	    /next sag
-	    sag mm-radius 1000 div cvi (           ) cvs (m) write-at
-	    sub def
-	    /numbers-written numbers-written 1 add def
-	} if
-    } for
-
-    15000 5000 25000 {
-	/mm-radius exch def
-	/sag mm-radius mm radius-to-sag def
-	sag next lt {
-	    /next sag
-	    sag mm-radius 1000 div cvi (           ) cvs (m) write-at
-	    sub def
-	    /numbers-written numbers-written 1 add def
-	} if
-    } for
+    % Switch to meter and show every 10cm.
+    5000  100  8999  {mm} {1000 div cvr (      ) cvs (m) strcat} sag-print-loop
+    9000  1000 13000 {mm} {1000 div cvi (      ) cvs (m) strcat} sag-print-loop
+    15000 5000 25000 {mm} {1000 div cvi (      ) cvs (m) strcat} sag-print-loop
 
     /Helvetica-Bold findfont 12 scalefont setfont
     (cm) stringwidth pop 2 div neg -14 mm moveto (cm) show
@@ -225,114 +198,23 @@ end
     ( scale numbers) show
 } def
 
-% (a) (b) -> (ab)
-/strcat {
-    exch dup length
-    2 index length add string
-    dup dup 4 2 roll copy length
-    4 -1 roll putinterval
-} def
-
-% Print an inch value
-/cvs-with-fraction {
-    imperial-print-with-fraction {
-	100 mul cvi
-	dup 100 mod 0 eq {
-	    100 div cvi (       ) cvs (   ) strcat
-	} {
-	    dup 100 mod 25 eq {
-		100 div cvi (       ) cvs (\274) strcat
-	    } {
-		dup 100 mod 50 eq {
-		    100 div cvi (       ) cvs (\275) strcat
-		} {
-		    100 div cvi (       ) cvs (\276) strcat
-		} ifelse
-	    } ifelse
-	} ifelse
-    } {
-	cvr (        ) cvs
-    } ifelse
-} def
-
 /imperial-disk {
     disk-boilerplate
     /numbers-written 0 def
     /next 100000 def
-    % Make this a bit smaller, as the 25.5 or 25 1/2 numbers are a little longer
-    /Helvetica-latin1 findfont font-size 0.9 mul scalefont setfont
-    % TODO: there are probably more pleasing ways to display this,
-    % e.g. longer values with feet/inches. Maybe for values displayed that way,
-    % people might also prefer increments of 3 instead of 5 ?
 
     % If we write fractions, we can write quarters because they are more
     % compact than xx.25. So here we choose the quantization accordingly
-    20 imperial-print-with-fraction {0.25}{0.5} ifelse 27 {
-	/inch-radius exch def
-	/sag inch-radius inch radius-to-sag def
-	sag next lt {
-	    /next sag
-	    sag inch-radius cvs-with-fraction () write-at
-	    sub def
-	    /numbers-written numbers-written 1 add def
-	} if
-    } for
+    /Helvetica-latin1 findfont font-size 0.9 mul scalefont setfont
+    20 imperial-print-with-fraction {0.25}{0.5} ifelse 27 {inch} {cvs-with-fraction} sag-print-loop
 
-    27.5 0.5 46.5 {
-	/inch-radius exch def
-	/sag inch-radius inch radius-to-sag def
-	sag next lt {
-	    /next sag
-	    sag inch-radius cvs-with-fraction () write-at
-	    sub def
-	    /numbers-written numbers-written 1 add def
-	} if
-    } for
+    27.5 0.5 46.5 {inch} {cvs-with-fraction} sag-print-loop
 
     /Helvetica-latin1 findfont font-size scalefont setfont
-    47 1 74 {
-	/inch-radius exch def
-	/sag inch-radius inch radius-to-sag def
-	sag next lt {
-	    /next sag
-	    sag inch-radius cvi (           ) cvs () write-at
-	    sub def
-	    /numbers-written numbers-written 1 add def
-	} if
-    } for
-
-    76 2 120 {
-	/inch-radius exch def
-	/sag inch-radius inch radius-to-sag def
-	sag next lt {
-	    /next sag
-	    sag inch-radius cvi (           ) cvs () write-at
-	    sub def
-	    /numbers-written numbers-written 1 add def
-	} if
-    } for
-
-    125 5 275 {
-	/inch-radius exch def
-	/sag inch-radius inch radius-to-sag def
-	sag next lt {
-	    /next sag
-	    sag inch-radius cvi (           ) cvs () write-at
-	    sub def
-	    /numbers-written numbers-written 1 add def
-	} if
-    } for
-
-    276 12 1000 {
-	/inch-radius exch def
-	/sag inch-radius inch radius-to-sag def
-	sag next lt {
-	    /next sag
-	    sag inch-radius 12 div cvi (           ) cvs (') write-at
-	    sub def
-	    /numbers-written numbers-written 1 add def
-	} if
-    } for
+    47 1 74     {inch} {cvi (        ) cvs} sag-print-loop
+    76 2 120    {inch} {cvi (        ) cvs} sag-print-loop
+    125 5 275   {inch} {cvi (        ) cvs} sag-print-loop
+    276 12 1000 {inch} {12 div cvi (     ) cvs (') strcat} sag-print-loop
 
     /Helvetica-Bold findfont 12 scalefont setfont
     outer-radius 5 mm sub 80 false (imperial) radius-print
