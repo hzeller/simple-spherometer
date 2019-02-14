@@ -1,9 +1,10 @@
 %!PS
 
 /mm { 72 25.4 div mul } bind def
+/cm { 72 2.54 div mul } bind def
 /inch { 72 mul } bind def
 
-/imperial-print-with-fraction true def  % print 0.5 fractions as 1/2 in imperial
+/print-with-fraction true def  % print 0.5 fractions as 1/2 in imperial
 /spherometer-radius 50 mm def     % Radius of circle circumscribing the legs
 /pitch 0.5 mm def                 % Pitch of our measure screw (M3)
 
@@ -13,16 +14,20 @@
 
 /font-size 11 def                 % As large as possible for maximum readability
 /text-line-clearance 0.3 mm def   % Text above measure tick-line
-/text-spacing 0.75 mm def         % Leave at least this amount to next tick
+/text-spacing 0.7 mm def         % Leave at least this amount to next tick
 
-/turns 2.1 mm pitch div 1 add def % Turns: depends on maximum measure distance
+% Turns: depends on maximum useful measurement range within the acrylic
+% sandwich; typically the spacers would be made out of 3mm acrylic for instance.
+% And also depending on the lowest end of relevant measurement range: a
+% small mirror with, say f2, will have a limited sag.
+/turns 1.6 mm pitch div 1 add def
 
 /strip-fill-fraction 0.80 def  % What width of the spiral text strip is used.
 
 /strip-width outer-radius inner-radius sub turns div def
 /PI 3.1415926 def
 
-% Use Latin1 encoding, because it has a 1/2 character
+% Use Latin1 encoding, because it has a 1/2 character we need for fraction-print
 /Helvetica findfont
 dup length dict begin
 {1 index /FID ne {def}{pop pop} ifelse} forall
@@ -43,6 +48,10 @@ end
     sub
 } def
 
+% Given a rotational position, write the mark and number on that particular
+% angle and spiral-distance on the disk.
+% Return on stack what the least next rotational position is we can write
+% a mark without interfering with the current written number
 % rotate-pos-in-mm (text) -> difference
 /write-at {
     1 dict begin
@@ -102,9 +111,19 @@ end
     4 -1 roll putinterval
 } def
 
+% print number, but remove all-zero decimal fraction.
+/cvs-no-trailing-zero {
+    dup
+    10 mul cvi 10 mod 0 eq {
+	cvi (      ) cvs (   ) strcat
+    } {
+	(      ) cvs
+    } ifelse
+} def
+
 % Print a number with fraction. Typically used for inch values
 /cvs-with-fraction {
-    imperial-print-with-fraction {
+    print-with-fraction {
 	100 mul cvi
 	dup 100 mod 0 eq {
 	    100 div cvi (       ) cvs (   ) strcat
@@ -124,6 +143,12 @@ end
     } ifelse
 } def
 
+% sag-print-loop modifies two global variables
+/sag-print-loop-init {
+    /numbers-written 0 def
+    /next 100000 def
+} def
+
 % start step end {conversion} {print} sag-print-loop
 /sag-print-loop {
     1 dict begin
@@ -133,9 +158,10 @@ end
 	/unit-radius exch def
 	/sag unit-radius conversion-fun radius-to-sag def
 	sag next lt {
-	    /next sag
-	    sag unit-radius print-fun write-at
-	    sub def
+	    /txt unit-radius print-fun def   % The text we write
+	    /diff sag txt write-at def       % write it at pos sag
+	    % Remember in /next when the next useful numbe is we can write
+	    /next sag diff sub def
 	    /numbers-written numbers-written 1 add def
 	} if
     } for
@@ -174,24 +200,24 @@ end
 % useful.
 /metric-disk {
     disk-boilerplate
-    /numbers-written 0 def
-    /next 100000 def
+    sag-print-loop-init
     % 1 cm steps, until things get too tight, then increasingly larger
-    % 'pleasing' round units.
-    600 10 2700    {mm} {10 div cvi (     ) cvs} sag-print-loop
-    2750 50 5000   {mm} {10 div cvi (     ) cvs} sag-print-loop
+    % 'pleasing' round intervals
+    /Helvetica-latin1 findfont font-size scalefont setfont
+    80 1 99   {cm} {(     ) cvs} sag-print-loop
+    100 2 500 {cm} {(     ) cvs} sag-print-loop
 
     /Helvetica findfont font-size 0.9 mul scalefont setfont
     % Switch to meter and show every 10cm.
-    5000  100  8999  {mm} {1000 div cvr (      ) cvs (m) strcat} sag-print-loop
-    9000  1000 13000 {mm} {1000 div cvi (      ) cvs (m) strcat} sag-print-loop
-    15000 5000 25000 {mm} {1000 div cvi (      ) cvs (m) strcat} sag-print-loop
+    500  10  850  {cm} {100 div cvr (      ) cvs (m) strcat} sag-print-loop
+    900  100 1300 {cm} {100 div cvi (      ) cvs (m) strcat} sag-print-loop
+    1500 500 2500 {cm} {100 div cvi (      ) cvs (m) strcat} sag-print-loop
 
     /Helvetica-Bold findfont 12 scalefont setfont
-    (cm) stringwidth pop 2 div neg -14 mm moveto (cm) show
+    (cm) stringwidth pop 2 div neg -18 mm moveto (cm) show
     outer-radius 5 mm sub 80 false (metric) radius-print
     /Helvetica findfont 7 scalefont setfont
-    14 mm 24 true (\(sphere radius\)) radius-print
+    18 mm 24 true (\(sphere radius\)) radius-print
 
     % Info scale density
     outer-radius 10 mm add 0 moveto numbers-written (       ) cvs show
@@ -200,27 +226,21 @@ end
 
 /imperial-disk {
     disk-boilerplate
-    /numbers-written 0 def
-    /next 100000 def
-
-    % If we write fractions, we can write quarters because they are more
-    % compact than xx.25. So here we choose the quantization accordingly
-    /Helvetica-latin1 findfont font-size 0.9 mul scalefont setfont
-    20 imperial-print-with-fraction {0.25}{0.5} ifelse 27 {inch} {cvs-with-fraction} sag-print-loop
-
-    27.5 0.5 46.5 {inch} {cvs-with-fraction} sag-print-loop
+    sag-print-loop-init
 
     /Helvetica-latin1 findfont font-size scalefont setfont
-    47 1 74     {inch} {cvi (        ) cvs} sag-print-loop
-    76 2 120    {inch} {cvi (        ) cvs} sag-print-loop
-    125 5 275   {inch} {cvi (        ) cvs} sag-print-loop
-    276 12 1000 {inch} {12 div cvi (     ) cvs (') strcat} sag-print-loop
+    31 0.5 43.5 {inch} {cvs-with-fraction} sag-print-loop
+    44 1 70     {inch} {cvi (        ) cvs} sag-print-loop
+    72 2 106    {inch} {cvi (        ) cvs} sag-print-loop
+    107 1 119   {inch} {cvi (        ) cvs} sag-print-loop
+    120 2 275   {inch} {cvi (        ) cvs} sag-print-loop
+    276 12 76 12 mul {inch} {12 div cvi (     ) cvs (') strcat} sag-print-loop
 
     /Helvetica-Bold findfont 12 scalefont setfont
     outer-radius 5 mm sub 80 false (imperial) radius-print
-    16 mm -10 true (inch) radius-print
+    18 mm -10 true (inch) radius-print
     /Helvetica findfont 7 scalefont setfont
-    15 mm 24 true (\(sphere radius\)) radius-print
+    18 mm 24 true (\(sphere radius\)) radius-print
 
     % Info scale density
     outer-radius 10 mm add 0 moveto numbers-written (       ) cvs show
@@ -233,6 +253,7 @@ end
 (\(1\) Cut outside and inside circle. \(2\) laminate disk.) show
 30 mm 255 mm moveto
 (\(3\) Finally, cut out out from laminate, outside the 'airbubble' margin.) show
+
 outer-radius 15 mm add outer-radius 15 mm add translate metric-disk
 0 outer-radius 2.2 mul translate imperial-disk
 
